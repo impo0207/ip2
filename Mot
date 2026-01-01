@@ -42,6 +42,7 @@ function OthersStuffsModule.GetSettings()
 end
 
 function OthersStuffsModule:ApplySettings(Settings, Modules, Toggles)
+    -- Existing Settings
     if Settings["AimlockPlayers"] ~= nil then
         Modules.Aimlock:SetPlayerAimlock(Settings["AimlockPlayers"])
         Toggles.AimlockPlayers:UpdateToggle(nil, Settings["AimlockPlayers"])
@@ -83,6 +84,28 @@ function OthersStuffsModule:ApplySettings(Settings, Modules, Toggles)
     if Settings["SilentAimDistanceLimit"] then
         Modules.SilentAim:SetDistanceLimit(Settings["SilentAimDistanceLimit"])
     end
+
+    -- [NEW FOV SETTINGS LOADING]
+    if Settings["UseFOV"] ~= nil then
+        Modules.SilentAim:SetUseFOV(Settings["UseFOV"])
+        if Toggles.UseFOV then Toggles.UseFOV:UpdateToggle(nil, Settings["UseFOV"]) end
+    end
+
+    if Settings["ShowFOV"] ~= nil then
+        Modules.SilentAim:SetShowFOV(Settings["ShowFOV"])
+        if Toggles.ShowFOV then Toggles.ShowFOV:UpdateToggle(nil, Settings["ShowFOV"]) end
+    end
+
+    if Settings["FOVFilled"] ~= nil then
+        Modules.SilentAim:SetFOVFilled(Settings["FOVFilled"])
+        if Toggles.FOVFilled then Toggles.FOVFilled:UpdateToggle(nil, Settings["FOVFilled"]) end
+    end
+
+    if Settings["FOVRadius"] ~= nil then
+        Modules.SilentAim:SetFOVRadius(Settings["FOVRadius"])
+        if Toggles.FOVRadius then Toggles.FOVRadius:Refresh({Settings["FOVRadius"]}) end
+    end
+    -- [END NEW FOV SETTINGS LOADING]
 
     if Settings["ESPPlayers"] ~= nil then
         Modules.ESP:SetESP(Settings["ESPPlayers"])
