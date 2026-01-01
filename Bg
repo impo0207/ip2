@@ -12,6 +12,9 @@ local RS = game:GetService("ReplicatedStorage")
 local commE = RS:WaitForChild("Remotes"):WaitForChild("CommE")
 local MouseModule = RS:FindFirstChild("Mouse")
 
+-- Safely get Drawing Library
+local Drawing = Drawing or getgenv().Drawing
+
 local Services = setmetatable({}, {
     __index = function(self, serviceName)
         local good, service = pcall(game.GetService, game, serviceName);
@@ -66,27 +69,25 @@ local PredictionAmount = 0.1
 local maxRange = 1000
 
 -- Initialize Drawing
-pcall(function()
-    if Drawing then
-        CircleOutline = Drawing.new("Circle")
-        CircleOutline.Visible = false
-        CircleOutline.Thickness = 1.5
-        CircleOutline.Color = FOVColor
-        CircleOutline.Transparency = 1
-        CircleOutline.NumSides = 64
-        CircleOutline.Radius = FOVRadius
-        CircleOutline.Filled = false
+if Drawing then
+    CircleOutline = Drawing.new("Circle")
+    CircleOutline.Visible = false
+    CircleOutline.Thickness = 1.5
+    CircleOutline.Color = FOVColor
+    CircleOutline.Transparency = 1
+    CircleOutline.NumSides = 64
+    CircleOutline.Radius = FOVRadius
+    CircleOutline.Filled = false
 
-        CircleFill = Drawing.new("Circle")
-        CircleFill.Visible = false
-        CircleFill.Thickness = 0
-        CircleFill.Color = FOVColor
-        CircleFill.Transparency = 0.2 -- Lower transparency for fill
-        CircleFill.NumSides = 64
-        CircleFill.Radius = FOVRadius
-        CircleFill.Filled = true
-    end
-end)
+    CircleFill = Drawing.new("Circle")
+    CircleFill.Visible = false
+    CircleFill.Thickness = 0
+    CircleFill.Color = FOVColor
+    CircleFill.Transparency = 0.2
+    CircleFill.NumSides = 64
+    CircleFill.Radius = FOVRadius
+    CircleFill.Filled = true
+end
 
 local function getHRP(model)
 	if not model or not model:FindFirstChild("HumanoidRootPart") then return nil end
@@ -383,9 +384,9 @@ local function startRenderLoop()
     if renderConnection then return end
 
     renderConnection = RunService.RenderStepped:Connect(function()
-        -- Update Drawing Logic
+        -- [FIXED] Update Drawing Logic - Runs even if Aimbot is OFF, as long as ShowFOV is ON
         if CircleOutline then
-            local shouldShow = ShowFOV and (SilentAimPlayersEnabled or SilentAimNPCsEnabled)
+            local shouldShow = ShowFOV
             local mousePos = UserInputService:GetMouseLocation()
             
             CircleOutline.Visible = shouldShow
@@ -399,67 +400,79 @@ local function startRenderLoop()
             CircleFill.Color = FOVColor
         end
 
-        local lpChar = player.Character
-        if not lpChar then return end
-        local lpHRP = lpChar:FindFirstChild("HumanoidRootPart")
-        if not lpHRP then return end
-
-        if not SilentAimPlayersEnabled and not SilentAimNPCsEnabled then
+        -- [FIXED] Loop Exit Condition: Only stop if BOTH Aimbot AND Visuals are off
+        if not SilentAimPlayersEnabled and not SilentAimNPCsEnabled and not ShowFOV then
+            renderConnection:Disconnect()
+            renderConnection = nil
+            if CircleOutline then CircleOutline.Visible = false end
+            if CircleFill then CircleFill.Visible = false end
             return
         end
 
-        local targetModel = nil
-        local lookTargetPos = nil
+        -- Main Aimbot Logic (Only runs if aimbot enabled)
+        if SilentAimPlayersEnabled or SilentAimNPCsEnabled then
+            local lpChar = player.Character
+            if not lpChar then return end
+            local lpHRP = lpChar:FindFirstChild("HumanoidRootPart")
+            if not lpHRP then return end
 
-        if SilentAimPlayersEnabled then
-            local targetplayer = Selectedplayer or getClosestplayer(lpHRP)
-            if targetplayer and targetplayer ~= player and targetplayer.Character then
-                playersaimbot = targetplayer.Name
-                local hrp = getHRP(targetplayer.Character)
-                PlayersPosition = getPredictedPosition(hrp)
-                lookTargetPos = PlayersPosition
-                targetModel = targetplayer.Character
-                applyHighlight(targetModel, "player")
-            else
+            local targetModel = nil
+            local lookTargetPos = nil
+
+            if SilentAimPlayersEnabled then
+                local targetplayer = Selectedplayer or getClosestplayer(lpHRP)
+                if targetplayer and targetplayer ~= player and targetplayer.Character then
+                    playersaimbot = targetplayer.Name
+                    local hrp = getHRP(targetplayer.Character)
+                    PlayersPosition = getPredictedPosition(hrp)
+                    lookTargetPos = PlayersPosition
+                    targetModel = targetplayer.Character
+                    applyHighlight(targetModel, "player")
+                else
+                    playersaimbot, PlayersPosition = nil, nil
+                end
+            elseif currentTargetType == "player" then
                 playersaimbot, PlayersPosition = nil, nil
+                clearHighlight()
             end
-        elseif currentTargetType == "player" then
-            playersaimbot, PlayersPosition = nil, nil
-            clearHighlight()
-        end
 
-        if SilentAimNPCsEnabled then  
-            local closestNPC = getClosestNPC(lpHRP)  
-            if closestNPC then  
-                NPCaimbot = closestNPC.Name  
-                local hrp = getHRP(closestNPC)  
-                NPCPosition = getPredictedPosition(hrp)
-                lookTargetPos = NPCPosition
-                if not targetModel then  
-                    targetModel = closestNPC  
-                    applyHighlight(targetModel, "NPC")  
-                end  
-            else  
+            if SilentAimNPCsEnabled then  
+                local closestNPC = getClosestNPC(lpHRP)  
+                if closestNPC then  
+                    NPCaimbot = closestNPC.Name  
+                    local hrp = getHRP(closestNPC)  
+                    NPCPosition = getPredictedPosition(hrp)
+                    lookTargetPos = NPCPosition
+                    if not targetModel then  
+                        targetModel = closestNPC  
+                        applyHighlight(targetModel, "NPC")  
+                    end  
+                else  
+                    NPCaimbot, NPCPosition = nil, nil  
+                end
+            elseif currentTargetType == "NPC" then
                 NPCaimbot, NPCPosition = nil, nil  
+                clearHighlight()
             end
-        elseif currentTargetType == "NPC" then
-            NPCaimbot, NPCPosition = nil, nil  
-            clearHighlight()
+
+            if currentTool and lookTargetPos and isSkillReadyForTool(currentTool.Name) and not isNotDoughValidCondition() then
+                local lookVector = (Vector3.new(lookTargetPos.X, lpHRP.Position.Y, lookTargetPos.Z) - lpHRP.Position).Unit
+                lpHRP.CFrame = CFrame.new(lpHRP.Position, lpHRP.Position + lookVector)
+            end
         end
-        if currentTool and lookTargetPos and isSkillReadyForTool(currentTool.Name) and not isNotDoughValidCondition() then
-	        local lookVector = (Vector3.new(lookTargetPos.X, lpHRP.Position.Y, lookTargetPos.Z) - lpHRP.Position).Unit
-	            lpHRP.CFrame = CFrame.new(lpHRP.Position, lpHRP.Position + lookVector)
-	    end
     end)
 end
 
 local function stopRenderLoop()
-    if renderConnection then
-        renderConnection:Disconnect()
-        renderConnection = nil
+    -- Only force stop if everything is disabled
+    if not SilentAimPlayersEnabled and not SilentAimNPCsEnabled and not ShowFOV then
+        if renderConnection then
+            renderConnection:Disconnect()
+            renderConnection = nil
+        end
+        if CircleOutline then CircleOutline.Visible = false end
+        if CircleFill then CircleFill.Visible = false end
     end
-    if CircleOutline then CircleOutline.Visible = false end
-    if CircleFill then CircleFill.Visible = false end
 end
 
 local function hookTool(tool)
@@ -734,9 +747,7 @@ function SilentAimModule:SetPlayerSilentAim(state)
     if state then
         startRenderLoop()
     else
-        if not SilentAimNPCsEnabled then
-            stopRenderLoop()
-        end
+        stopRenderLoop()
     end
 end
 
@@ -747,9 +758,7 @@ function SilentAimModule:SetNPCSilentAim(state)
     if state then
         startRenderLoop()
     else
-        if not SilentAimPlayersEnabled then
-            stopRenderLoop()
-        end
+        stopRenderLoop()
     end
 end
 
@@ -761,8 +770,12 @@ end
 
 function SilentAimModule:SetShowFOV(state)
     ShowFOV = state
-    if CircleOutline then CircleOutline.Visible = (state and (SilentAimPlayersEnabled or SilentAimNPCsEnabled)) end
-    if state then startRenderLoop() end
+    if state then 
+        startRenderLoop() 
+    else
+        if CircleOutline then CircleOutline.Visible = false end
+        if CircleFill then CircleFill.Visible = false end
+    end
 end
 
 function SilentAimModule:SetFOVFilled(state)
