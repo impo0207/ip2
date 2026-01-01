@@ -1,0 +1,117 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/land9678/Sapi-Hub-V1/refs/heads/main/KavoUI.txt"))()
+local RaidsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/impo0207/ip2/refs/heads/main/Neha"))()
+local UiSettingsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/impo0207/ip2/refs/heads/main/Vot"))()
+
+local toggleGui = Instance.new("ScreenGui")
+toggleGui.Name = "ToggleGui"
+toggleGui.Parent = game.CoreGui
+
+local toggleButton = Instance.new("ImageButton")
+toggleButton.Name = "SHV1"
+toggleButton.Size = UDim2.new(0, 40, 0, 40)
+toggleButton.Position = UDim2.new(0, 5, 0, 10)
+toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleButton.BackgroundTransparency = 0.2
+toggleButton.BorderSizePixel = 0
+toggleButton.ZIndex = 9999
+toggleButton.Image = "rbxassetid://76926193047725"
+toggleButton.Parent = toggleGui
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 8)
+toggleCorner.Parent = toggleButton
+
+UiSettingsModule:MakeDraggable(toggleButton)
+
+local executor = "Unknown"
+if syn then
+    executor = "Synapse X"
+elseif KRNL_LOADED then
+    executor = "KRNL"
+elseif fluxus then
+    executor = "Fluxus"
+elseif getexecutorname then
+    local success, execName = pcall(getexecutorname)
+    if success and type(execName) == "string" then
+        executor = execName
+    end
+end
+
+local Window = Library.CreateLib("Sapi Hub BF PvP ˃ᴗ˂  |  " .. executor, UiSettingsModule.currentTheme)
+
+local Tab = Window:NewTab("⛓・Discord")
+local Section = Tab:NewSection("✏・Link")
+
+Section:NewButton("Join Discord", "Get Link Discord server", function()
+	local link = "https://discord.gg/fKwqmB4C"
+    if setclipboard then
+        setclipboard(link)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Sapi Hub",
+            Text = "Copied Discord Link!",
+            Duration = 5
+        })
+    end
+end)
+
+local Tab = Window:NewTab("◇・Raids")
+local Section = Tab:NewSection("◈・Settings")
+
+Section:NewDropdown("・Select Chip", "Select Chip For Raid", {
+    "Flame", "Ice", "Quake", "Light", "Dark", "Spider",
+    "Rumble", "Magma", "Buddha", "Sand", "Phoenix", "Dough"
+}, function(selected)
+    RaidsModule:SetSelectChip(selected)
+end)
+
+Section:NewToggle("・Buy Chip", "Buy Chip From Selected Chip", function(state)
+    RaidsModule:SetBuyChip(state)
+end)
+
+Section:NewToggle("・Start Raid(Second Sea)", "Start Raid From Selected Chip", function(state)
+    RaidsModule:SetStartRaidSecond(state)
+end)
+
+Section:NewToggle("・Start Raid(Third Sea)", "Start Raid From Selected Chip", function(state)
+    RaidsModule:SetStartRaidThird(state)
+end)
+
+Section:NewToggle("・Auto Next Island", "Auto Next Island", function(state)
+    RaidsModule:SetNextIsland(state)
+end)
+
+Section:NewToggle("・Auto Raid", "Auto Raid", function(state)
+    RaidsModule:SetAutoRaid(state)
+end)
+
+Section:NewToggle("・Auto Awaken", "Auto Awaken Current Ability", function(state)
+    RaidsModule:SetAutoAwaken(state)
+end)
+
+Section:NewToggle("・Get Lowest Beli Fruits TvT", "Make Sure You Have Fruits in Inventory", function(state)
+    RaidsModule:SetGetFruits(state)
+end)
+
+Section:NewToggle("・Bring Fruits", "Bringing Spawned Or Dropped Fruits ", function(state)
+    RaidsModule:SetBringFruits(state)
+end)
+
+Section:NewToggle("・Walk On Water", "Use in Auto Raid ", function(state)
+    RaidsModule:SetWalkWater(state)
+end)
+
+Section:NewToggle("・No Clip", "Use For Tween", function(state)
+    RaidsModule:SetNoClip(state)
+end)
+
+Section:NewButton("Teleport Lab(Sea Two)", "Teleport Lab Of Sea Two", function()
+	Tween2(CFrame.new(-6505.351, 255.138, -4506.073))
+end)
+
+Section:NewButton("Teleport Lab(Sea Third)", "Teleport Lab Of Sea Three", function()
+	Tween2(CFrame.new(-5038.623, 322.358, -2873.446))
+end)
+
+toggleButton.MouseButton1Click:Connect(function()
+    Library:ToggleUI()
+end)
