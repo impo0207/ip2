@@ -1,10 +1,10 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/land9678/Sapi-Hub-V1/refs/heads/main/KavoUI.txt"))()
-local ESPModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/impo0207/ip2/refs/heads/main/Jj"))()
-local SilentAimModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/impo0207/ip2/refs/heads/main/Op"))()
-local StuffsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/impo0207/ip2/refs/heads/main/Goti"))()
-local OthersStuffsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/impo0207/ip2/refs/heads/main/Mot"))()
-local UiSettingsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/impo0207/ip2/refs/heads/main/Vot"))()
-local ZSkillModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/impo0207/ip2/refs/heads/main/Teku"))()
+local ESPModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Jj"))()
+local SilentAimModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Op"))()
+local StuffsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Goti"))()
+local OthersStuffsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Mot"))()
+local UiSettingsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Vot"))()
+local ZSkillModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Teku"))()
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
@@ -75,6 +75,28 @@ local SilentAimPedictionToggle = Section:NewToggle("・SilentAim Prediction", "P
     SilentAimModule:SetPrediction(state)
     Settings["SilentAimPediction"] = state
 end)
+
+-- [NEW FOV SETTINGS]
+local FOVLogicToggle = Section:NewToggle("・Use FOV Logic", "Closest to cursor in circle", function(state)
+    SilentAimModule:SetUseFOV(state)
+    Settings["UseFOV"] = state
+end)
+
+local ShowFOVToggle = Section:NewToggle("・Show FOV Circle", "Draw the circle", function(state)
+    SilentAimModule:SetShowFOV(state)
+    Settings["ShowFOV"] = state
+end)
+
+local FillFOVToggle = Section:NewToggle("・Fill FOV Circle", "Fill the circle", function(state)
+    SilentAimModule:SetFOVFilled(state)
+    Settings["FOVFilled"] = state
+end)
+
+local FOVRadiusSlider = Section:NewSlider("・FOV Radius", "Size of circle", 500, 50, function(val)
+    SilentAimModule:SetFOVRadius(val)
+    Settings["FOVRadius"] = val
+end)
+-- [END NEW FOV SETTINGS]
 
 Section:NewDropdown("・Prediction Future | Default 0.1s", "Select max Prediction for Silent Aim", {"0.2", "0.3", "0.4"}, function(selected)
     local num = tonumber(selected)
@@ -326,7 +348,12 @@ OthersStuffsModule:ApplySettings(Settings, {
     ZSkills = ZSkillToggle,
     BunnyHop = BunnyHopToggle,
     AuraSkill = AuraSkillToggle,
-    V3Skill = V3SkillToggle
+    V3Skill = V3SkillToggle,
+    -- New Settings
+    UseFOV = FOVLogicToggle,
+    ShowFOV = ShowFOVToggle,
+    FOVFilled = FillFOVToggle,
+    FOVRadius = FOVRadiusSlider
 })
 
 OthersStuffsModule.StartFruitNotifier()
