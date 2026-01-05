@@ -1,3 +1,5 @@
+-- MainSilentAimUI.lua -- ...existing code from MK...
+
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/land9678/Sapi-Hub-V1/refs/heads/main/KavoUI.txt"))()
 local ESPModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Jj"))()
 local SilentAimModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Op"))()
@@ -5,10 +7,15 @@ local StuffsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/
 local OthersStuffsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Mot"))()
 local UiSettingsModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Vot"))()
 local ZSkillModule = loadstring(game:HttpGet("https://raw.githubusercontent.com/jaanu91/Ip/refs/heads/main/Teku"))()
+
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
 local PlayerList = {"None"}
 
 local toggleGui = Instance.new("ScreenGui")
@@ -32,12 +39,58 @@ toggleCorner.Parent = toggleButton
 
 UiSettingsModule:MakeDraggable(toggleButton)
 
+-- ==========================================
+-- FOV CIRCLE SETUP
+-- ==========================================
+local Camera = Workspace.CurrentCamera
+
+local FOVSettings = {
+    Size = 150,
+    ShowFOV = true,
+    Color = Color3.fromRGB(255, 0, 0)
+}
+
+-- Create FOV Circle
+local FOVRing = Instance.new("Frame")
+local FOVStroke = Instance.new("UIStroke")
+local FOVCorner = Instance.new("UICorner")
+
+FOVRing.Name = "FOVRing"
+FOVRing.Parent = toggleGui
+FOVRing.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+FOVRing.BackgroundTransparency = 1
+FOVRing.AnchorPoint = Vector2.new(0.5, 0.5)
+FOVRing.Size = UDim2.new(0, FOVSettings.Size * 2, 0, FOVSettings.Size * 2)
+FOVRing.Position = UDim2.new(0.5, 0, 0.5, 0)
+FOVRing.Visible = FOVSettings.ShowFOV
+FOVRing.ZIndex = 1
+
+FOVCorner.CornerRadius = UDim.new(1, 0)
+FOVCorner.Parent = FOVRing
+
+FOVStroke.Parent = FOVRing
+FOVStroke.Thickness = 2
+FOVStroke.Color = FOVSettings.Color
+FOVStroke.Transparency = 0.3
+
+-- Function to get center point
+local function GetCenterPoint()
+    if UserInputService.TouchEnabled or UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter then
+        return Camera.ViewportSize / 2
+    else
+        return UserInputService:GetMouseLocation()
+    end
+end
+
+-- ==========================================
+-- SETTINGS & EXECUTOR
+-- ==========================================
 local Settings = OthersStuffsModule.LoadSettings()
 
 local executor = "Unknown"
 if syn then
     executor = "Synapse X"
-elseif KRNL_LOADED then
+elseif KRNLLOADED then
     executor = "KRNL"
 elseif fluxus then
     executor = "Fluxus"
@@ -50,67 +103,50 @@ end
 
 local execStatus = (executor == "Xeno" or executor:lower():find("solara") or executor:lower():find("krnl")) and "Not Working" or "Working"
 
-local Window = Library.CreateLib("Sapi Hub BF PvP ˃ᴗ˂  |  " .. executor, UiSettingsModule.currentTheme)
+local Window = Library.CreateLib("Sapi Hub BF PvP [" .. executor .. "]", UiSettingsModule.currentTheme)
 
-local Tab = Window:NewTab("◇・Executor Status")
-local Section = Tab:NewSection("◈・Information")
-
+-- ==========================================
+-- EXECUTOR STATUS TAB
+-- ==========================================
+local Tab = Window:NewTab("Executor Status")
+local Section = Tab:NewSection("Information")
 Section:NewLabel("Executor: " .. executor)
 Section:NewLabel("Status: " .. execStatus)
 
-local Tab = Window:NewTab("⛩・Silent Aimbot")
-local Section = Tab:NewSection("⚓・Settings")
+-- ==========================================
+-- SILENT AIMBOT TAB
+-- ==========================================
+local Tab = Window:NewTab("Silent Aimbot")
+local Section = Tab:NewSection("Settings")
 
-local SilentAimPlayersToggle = Section:NewToggle("・SilentAim Players", "Lock onto nearest player", function(state)
+local SilentAimPlayersToggle = Section:NewToggle("SilentAim Players", "Lock onto nearest player", function(state)
     SilentAimModule:SetPlayerSilentAim(state)
-    Settings["SilentAimPlayers"] = state
+    Settings.SilentAimPlayers = state
 end)
 
-local SilentAimNPCToggle = Section:NewToggle("・SilentAim Npcs", "Lock onto nearest npc", function(state)
+local SilentAimNPCToggle = Section:NewToggle("SilentAim Npcs", "Lock onto nearest npc", function(state)
     SilentAimModule:SetNPCSilentAim(state)
-    Settings["SilentAimNPC"] = state
+    Settings.SilentAimNPC = state
 end)
 
-local SilentAimPedictionToggle = Section:NewToggle("・SilentAim Prediction", "Prediction on target", function(state)
+local SilentAimPedictionToggle = Section:NewToggle("SilentAim Prediction", "Prediction on target", function(state)
     SilentAimModule:SetPrediction(state)
-    Settings["SilentAimPediction"] = state
+    Settings.SilentAimPediction = state
 end)
 
--- [NEW FOV SETTINGS]
-local FOVLogicToggle = Section:NewToggle("・Use FOV Logic", "Closest to cursor in circle", function(state)
-    SilentAimModule:SetUseFOV(state)
-    Settings["UseFOV"] = state
-end)
-
-local ShowFOVToggle = Section:NewToggle("・Show FOV Circle", "Draw the circle", function(state)
-    SilentAimModule:SetShowFOV(state)
-    Settings["ShowFOV"] = state
-end)
-
-local FillFOVToggle = Section:NewToggle("・Fill FOV Circle", "Fill the circle", function(state)
-    SilentAimModule:SetFOVFilled(state)
-    Settings["FOVFilled"] = state
-end)
-
-local FOVRadiusSlider = Section:NewSlider("・FOV Radius", "Size of circle", 500, 50, function(val)
-    SilentAimModule:SetFOVRadius(val)
-    Settings["FOVRadius"] = val
-end)
--- [END NEW FOV SETTINGS]
-
-Section:NewDropdown("・Prediction Future | Default 0.1s", "Select max Prediction for Silent Aim", {"0.2", "0.3", "0.4"}, function(selected)
+Section:NewDropdown("Prediction Future (Default 0.1s)", "Select max Prediction for Silent Aim", {"0.2", "0.3", "0.4"}, function(selected)
     local num = tonumber(selected)
     if num then
         SilentAimModule:SetPredictionAmount(num)
-        Settings["SilentAimPredictionFuture"] = num
+        Settings.SilentAimPredictionFuture = num
     end
 end)
 
-Section:NewDropdown("・Distance Limit | Default 1000m", "Select max distance for aimbot", {"200", "400", "600"}, function(selected)
+Section:NewDropdown("Distance Limit (Default 1000m)", "Select max distance for aimbot", {"200", "400", "600"}, function(selected)
     local num = tonumber(selected)
     if num then
         SilentAimModule:SetDistanceLimit(num)
-        Settings["SilentAimDistanceLimit"] = num
+        Settings.SilentAimDistanceLimit = num
     end
 end)
 
@@ -120,7 +156,7 @@ for _, plr in ipairs(Players:GetPlayers()) do
     end
 end
 
-local PlayerDropdown = Section:NewDropdown("・Select Player Target", "Choose a player to lock onto", PlayerList, function(selected)
+local PlayerDropdown = Section:NewDropdown("Select Player Target", "Choose a player to lock onto", PlayerList, function(selected)
     if selected == "None" then
         SilentAimModule:SetSelectedPlayer(nil)
     else
@@ -142,16 +178,40 @@ Players.PlayerAdded:Connect(RefreshPlayerList)
 Players.PlayerRemoving:Connect(RefreshPlayerList)
 RefreshPlayerList()
 
-local ZSkillToggle = Section:NewToggle("・GodhumanZ Aimlock", "I only set Godhuman", function(state)
+local ZSkillToggle = Section:NewToggle("Godhuman(Z) Aimlock", "I only set Godhuman", function(state)
     ZSkillModule:SetZSkills(state)
-    Settings["ZSkills"] = state
+    Settings.ZSkills = state
 end)
 
-local Tab = Window:NewTab("✿・Features")
-local Section = Tab:NewSection("⚜・Settings")
+-- ==========================================
+-- FOV CIRCLE CONTROLS (IN SILENT AIM TAB)
+-- ==========================================
+local ShowFOVToggle = Section:NewToggle("Show FOV Circle", "Display FOV circle", function(state)
+    FOVSettings.ShowFOV = state
+    FOVRing.Visible = state
+    Settings.ShowFOV = state
+end)
+
+Section:NewTextBox("FOV Size:", tostring(FOVSettings.Size), function(value)
+    local num = tonumber(value)
+    if num then
+        FOVSettings.Size = num
+        FOVRing.Size = UDim2.new(0, num * 2, 0, num * 2)
+        Settings.FOVSize = num
+        if SilentAimModule.SetFOVSize then
+            SilentAimModule:SetFOVSize(num)
+        end
+    end
+end)
+
+-- ==========================================
+-- FEATURES TAB
+-- ==========================================
+local Tab = Window:NewTab("Features")
+local Section = Tab:NewSection("Settings")
 
 Section:NewButton("Join Discord", "Get Link Discord server", function()
-	local link = "https://discord.gg/fKwqmB4C"
+    local link = "https://discord.gg/fKwqmB4C"
     if setclipboard then
         setclipboard(link)
         game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -162,51 +222,50 @@ Section:NewButton("Join Discord", "Get Link Discord server", function()
     end
 end)
 
-local ESPPlayersToggle = Section:NewToggle("・ESP Players", "Toggle Player ESP", function(state)
+local ESPPlayersToggle = Section:NewToggle("ESP Players", "Toggle Player ESP", function(state)
     ESPModule:SetESP(state)
-    Settings["ESPPlayers"] = state
+    Settings.ESPPlayers = state
 end)
 
-local V3SkillToggle = Section:NewToggle("・V3 Skill", "Auto activate V3 ability", function(state)
+local V3SkillToggle = Section:NewToggle("V3 Skill", "Auto activate V3 ability", function(state)
     ESPModule:SetV3(state)
-    Settings["V3Skill"] = state
+    Settings.V3Skill = state
 end)
 
-local BunnyHopToggle = Section:NewToggle("・Bunny hop", "Toggle Bunnyhop", function(state)
+local BunnyHopToggle = Section:NewToggle("Bunny hop", "Toggle Bunnyhop", function(state)
     ESPModule:SetBunnyhop(state)
-    Settings["BunnyHop"] = state
+    Settings.BunnyHop = state
 end)
 
-local AuraSkillToggle = Section:NewToggle("・Aura Skill", "Auto activate Buso", function(state)
+local AuraSkillToggle = Section:NewToggle("Aura Skill", "Auto activate Buso", function(state)
     ESPModule:SetBuso(state)
-    Settings["AuraSkill"] = state
+    Settings.AuraSkill = state
 end)
 
-local FpsOrPingsToggle = Section:NewToggle("・Fps Or Pings", "Display Ping or Fps", function(state)
+local FpsOrPingsToggle = Section:NewToggle("Fps Or Pings", "Display Ping or Fps", function(state)
     StuffsModule:SetPingsOrFps(state)
-    Settings["FpsOrPings"] = state
+    Settings.FpsOrPings = state
 end)
 
 player.CharacterAdded:Connect(function(char)
     char:WaitForChild("Humanoid")
     task.wait(1)
-    if Settings["WalkSpeedValue"] then
-        char.Humanoid.WalkSpeed = Settings["WalkSpeedValue"]
+    if Settings.WalkSpeedValue then
+        char.Humanoid.WalkSpeed = Settings.WalkSpeedValue
     end
 end)
 
-if player.Character and player.Character:FindFirstChild("Humanoid") and Settings["WalkSpeedValue"] then
-    player.Character.Humanoid.WalkSpeed = Settings["WalkSpeedValue"]
+if player.Character and player.Character:FindFirstChild("Humanoid") and Settings.WalkSpeedValue then
+    player.Character.Humanoid.WalkSpeed = Settings.WalkSpeedValue
 end
 
-Section:NewTextBox("Speed Hack", "WalkSpeedValue", function(speedfunc)
+Section:NewTextBox("Speed Hack:", "WalkSpeedValue", function(speedfunc)
     local num = tonumber(speedfunc)
     if num then
         getgenv().WalkSpeedValue = num
         UiSettingsModule:SetWalkSpeed(num)
-        Settings["WalkSpeedValue"] = num
+        Settings.WalkSpeedValue = num
         OthersStuffsModule.SaveSettings(Settings)
-
         local char = Players.LocalPlayer.Character
         if char and char:FindFirstChild("Humanoid") then
             char.Humanoid.WalkSpeed = num
@@ -214,62 +273,65 @@ Section:NewTextBox("Speed Hack", "WalkSpeedValue", function(speedfunc)
     end
 end)
 
-local FpsBoostToggle = Section:NewToggle("・Fps Boost", "Increase Fps", function(state)
+local FpsBoostToggle = Section:NewToggle("Fps Boost", "Increase Fps", function(state)
     StuffsModule:SetFpsBoost(state)
-    Settings["FpsBoost"] = state
+    Settings.FpsBoost = state
 end)
 
-local INFEnergyToggle = Section:NewToggle("・INF Energy", "Max Energy", function(state)
+local INFEnergyToggle = Section:NewToggle("INF Energy", "Max Energy", function(state)
     StuffsModule:SetINFEnergy(state)
-    Settings["INFEnergy"] = state
+    Settings.INFEnergy = state
 end)
 
-local WalkonWaterToggle = Section:NewToggle("・Walk on Water", "Travel in Water", function(state)
+local WalkonWaterToggle = Section:NewToggle("Walk on Water", "Travel in Water", function(state)
     StuffsModule:SetWalkWater(state)
-    Settings["WalkonWater"] = state
+    Settings.WalkonWater = state
 end)
 
-local FastAttackToggle = Section:NewToggle("・Fast Attack", "Fast Attack", function(state)
+local FastAttackToggle = Section:NewToggle("Fast Attack", "Fast Attack", function(state)
     StuffsModule:SetFastAttack(state)
-    Settings["FastAttack"] = state
+    Settings.FastAttack = state
 end)
 
-local AntiAFKToggle = Section:NewToggle("・AntiAfk", "AntiAfk only on before you off", function(state)
+local AntiAFKToggle = Section:NewToggle("AntiAfk", "AntiAfk only on before you off", function(state)
     ESPModule:SetAntiAfk(state)
-    Settings["AntiAFK"] = state
+    Settings.AntiAFK = state
 end)
 
-Section:NewTextBox("Jump Power", "JumpValue", function(jumpfunc)
-  getgenv().JumpValue = jumpfunc
+Section:NewTextBox("Jump Power:", "JumpValue", function(jumpfunc)
+    getgenv().JumpValue = jumpfunc
     if getgenv().JumpValue then
         game:GetService("Players").LocalPlayer.Character.Humanoid.JumpPower = getgenv().JumpValue
     end
 end)
 
-local V4Toggle = Section:NewToggle("・Auto V4", "Auto V4 Transform", function(state)
+local V4Toggle = Section:NewToggle("Auto V4", "Auto V4 Transform", function(state)
     UiSettingsModule:SetV4(state)
-    Settings["V4"] = state
+    Settings.V4 = state
 end)
 
-local FruitCheckToggle = Section:NewToggle("・Spawned Fruit Check", "Check Fruit Spawned", function(state)
+local FruitCheckToggle = Section:NewToggle("Spawned Fruit Check", "Check Fruit Spawned", function(state)
     UiSettingsModule:SetFruitCheck(state)
-    Settings["FruitCheck"] = state
+    Settings.FruitCheck = state
 end)
 
-local TeleportFruitToggle = Section:NewToggle("・Bring Fruits", "It take few seconds to bring fruits", function(state)
+local TeleportFruitToggle = Section:NewToggle("Bring Fruits", "It take few seconds to bring fruits", function(state)
     UiSettingsModule:SetTeleportFruit(state)
-    Settings["TeleportFruit"] = state
+    Settings.TeleportFruit = state
 end)
 
-local AutoKenToggle = Section:NewToggle("・Auto Ken", " AutoKen", function(state)
+local AutoKenToggle = Section:NewToggle("Auto Ken", "AutoKen", function(state)
     SilentAimModule:SetAutoKen(state)
-    Settings["AutoKen"] = state
+    Settings.AutoKen = state
 end)
 
-local Tab = Window:NewTab("⚙・Settings Manager")
-local Section = Tab:NewSection("💾・Settings")
+-- ==========================================
+-- SETTINGS MANAGER TAB
+-- ==========================================
+local Tab = Window:NewTab("Settings Manager")
+local Section = Tab:NewSection("Settings")
 
-Section:NewTextBox("Paste Job Id Here", "Paste JobId and press Enter", function(jobid)
+Section:NewTextBox("Paste Job Id Here:", "Paste JobId and press Enter", function(jobid)
     if jobid and jobid ~= "" then
         TeleportService:TeleportToPlaceInstance(game.PlaceId, jobid, Players.LocalPlayer)
     end
@@ -323,6 +385,9 @@ Section:NewDropdown("Select TextColor", "Choose a textcolor", UiSettingsModule:g
     end
 end)
 
+-- ==========================================
+-- APPLY SAVED SETTINGS
+-- ==========================================
 Settings = OthersStuffsModule.LoadSettings()
 
 OthersStuffsModule:ApplySettings(Settings, {
@@ -330,7 +395,7 @@ OthersStuffsModule:ApplySettings(Settings, {
     ESP = ESPModule,
     Stuffs = StuffsModule,
     Ui = UiSettingsModule,
-    Zskill= ZSkillModule
+    Zskill = ZSkillModule
 }, {
     SilentAimPlayers = SilentAimPlayersToggle,
     SilentAimNPC = SilentAimNPCToggle,
@@ -348,16 +413,57 @@ OthersStuffsModule:ApplySettings(Settings, {
     ZSkills = ZSkillToggle,
     BunnyHop = BunnyHopToggle,
     AuraSkill = AuraSkillToggle,
-    V3Skill = V3SkillToggle,
-    -- New Settings
-    UseFOV = FOVLogicToggle,
-    ShowFOV = ShowFOVToggle,
-    FOVFilled = FillFOVToggle,
-    FOVRadius = FOVRadiusSlider
+    V3Skill = V3SkillToggle
 })
 
+-- Apply FOV settings from saved config
+if Settings.ShowFOV ~= nil then
+    FOVSettings.ShowFOV = Settings.ShowFOV
+    FOVRing.Visible = Settings.ShowFOV
+    if ShowFOVToggle then
+        ShowFOVToggle:UpdateToggle(nil, Settings.ShowFOV)
+    end
+end
+
+if Settings.FOVSize then
+    FOVSettings.Size = Settings.FOVSize
+    FOVRing.Size = UDim2.new(0, Settings.FOVSize * 2, 0, Settings.FOVSize * 2)
+    if SilentAimModule.SetFOVSize then
+        SilentAimModule:SetFOVSize(Settings.FOVSize)
+    end
+end
+
+-- ==========================================
+-- FOV CIRCLE UPDATE LOOP
+-- ==========================================
+RunService.RenderStepped:Connect(function()
+    if not FOVSettings.ShowFOV then return end
+    
+    local center = GetCenterPoint()
+    FOVRing.Position = UDim2.fromOffset(center.X, center.Y)
+    
+    -- Change color based on target lock
+    local hasTarget = false
+    if SilentAimModule and SilentAimModule.GetSelectedPlayer then
+        local selectedPlayer = SilentAimModule:GetSelectedPlayer()
+        hasTarget = selectedPlayer ~= "None" and selectedPlayer ~= nil
+    end
+    
+    if hasTarget then
+        FOVStroke.Color = Color3.fromRGB(0, 255, 0) -- Green when locked
+    else
+        FOVStroke.Color = Color3.fromRGB(255, 0, 0) -- Red when no target
+    end
+end)
+
+-- ==========================================
+-- START FRUIT NOTIFIER
+-- ==========================================
 OthersStuffsModule.StartFruitNotifier()
 
+-- ==========================================
+-- TOGGLE BUTTON
+-- ==========================================
 toggleButton.MouseButton1Click:Connect(function()
     Library:ToggleUI()
 end)
